@@ -57,6 +57,12 @@ class OSMcentroids(object):
                 if self.args.relations:
                     self.create_relations_centroids()
 
+                if self.args.update_ways:
+                    self.update_ways_with_dims()
+
+                if self.args.update_relations:
+                    self.update_relations_with_dims()
+
     def import_data_in_sqlite_db(self):
         """Import OSM data with Wikipedia tag in a sqlite database to calculate
            centroids
@@ -89,6 +95,20 @@ class OSMcentroids(object):
             print "Nessuna tabella creata"
 
         return cur
+
+    def update_ways_with_dims(self):
+        query = """UPDATE osm_ways_centroids
+                   SET dist = GeodesicLength(
+                                MakeLine(
+                                    PointFromText(p1,4326),
+                                    PointFromText(p2,4326)
+                                    )
+                                )
+                """
+
+        print 'Executing: ', query
+
+        self._query_wrapper(query)
 
     def create_ways_centroids(self):
         query = """CREATE TABLE osm_ways_centroids
@@ -141,6 +161,19 @@ class OSMcentroids(object):
         except spatialite.OperationalError as error:
             print "Failed execution of query:\n%s" % query
             print error
+
+    def update_relations_with_dims(self):
+        query = """UPDATE osm_relations_centroids
+                   SET dist = GeodesicLength(
+                                MakeLine(
+                                    PointFromText(p1,4326),
+                                    PointFromText(p2,4326)
+                                    )
+                                )
+                    WHERE dist is NULL
+                """
+
+        self._query_wrapper(query)
 
     def create_relations_centroids(self):
         con = spatialite.connect(self.wOSMdb)
@@ -197,6 +230,8 @@ class OSMcentroids(object):
                    GROUP BY rel_id
                 """
         self._query_wrapper(query)
+
+        self.update_relations_with_dims()
 
         query = """SELECT Count(*)
                    FROM osm_relations_centroids
@@ -350,6 +385,16 @@ def main():
                             help="Calculate centroids for relations",
                             action="store_true"
                             )
+        parser.add_argument("--update-ways-with-dims",
+                            help="Update dims for ways",
+                            dest="update_ways",
+                            action="store_true"
+                            )
+        parser.add_argument("--update-relations-with-dims",
+                            help="Update dims for relations",
+                            dest="update_relations",
+                            action="store_true"
+                            )
         parser.add_argument("--drop_database",
                             help="Elimina il database",
                             action="store_true")
@@ -366,6 +411,9 @@ def main():
 
         args = parser.parse_args()
         print args
+
+        print 'Using OSM file: ', args.wOSMFile
+        print 'Using Spatialite DB: ', args.wOSMdb
 
         osm = OSMcentroids(args.wOSMFile, args.wOSMdb, args)
 
