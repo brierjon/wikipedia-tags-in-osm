@@ -24,9 +24,6 @@
 
 import argparse
 import os
-import pyspatialite
-from pyspatialite import dbapi2 as spatialite
-from subprocess import Popen, PIPE, call
 
 
 class OSMcentroids(object):
@@ -34,9 +31,47 @@ class OSMcentroids(object):
     def __init__(self, wOSMFile, wOSMdb, args=None):
         self.wOSMFile = wOSMFile
         self.wOSMdb = wOSMdb
+        self.args = args
 
-        if args is not None:
-            self.args = args
+        self.use_spatialite = False
+        try:
+            import pyspatialite
+            from pyspatialite import dbapi2 as spatialite
+            from subprocess import Popen, PIPE, call
+            self.use_spatialite = True
+        except ImportError as e:
+            print e
+            self.use_spatialite = False
+
+        if self.use_spatialite:
+            self = OSMcentroidsSpatialite(wOSMFile=self.wOSMFile,
+                                          wOSMdb=self.wOSMdb,
+                                          args=self.args)
+        else:
+            import ogr
+            self = OSMcentroidsOGR(wOSMFile=self.wOSMFile,
+                                   wOSMdb=self.wOSMdb,
+                                   args=self.args)
+
+
+class OSMcentroidsOGR(object):
+
+    def __init__(self, wOSMFile, wOSMdb, args=None):
+        self.wOSMFile = wOSMFile
+        self.wOSMdb = wOSMdb
+        self.args = args
+        self.use_spatialite = True
+
+
+class OSMcentroidsSpatialite(object):
+
+    def __init__(self, wOSMFile, wOSMdb, args=None):
+        self.wOSMFile = wOSMFile
+        self.wOSMdb = wOSMdb
+        self.args = args
+        self.use_spatialite = True
+
+        if self.args is not None:
 
             if self.args.drop_database:
                 self.drop_database()
