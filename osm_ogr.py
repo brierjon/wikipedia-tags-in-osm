@@ -83,7 +83,6 @@ def main():
                 osm_type = 'w'
             elif geom_type in RELATION_TYPES:
                 osm_type = 'r'
-                continue
             else:
                 print 'Error: unknown OSM type'
                 continue
