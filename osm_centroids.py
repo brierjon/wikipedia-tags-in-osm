@@ -23,6 +23,8 @@
 
 
 import argparse
+import ogr
+import osr
 import os
 
 
@@ -55,12 +57,100 @@ class OSMcentroids(object):
 
 
 class OSMcentroidsOGR(object):
+    NODE_TYPES = (ogr.wkbPoint, )
+    WAY_TYPES = (ogr.wkbLineString, ogr.wkbPolygon)
+    RELATION_TYPES = (ogr.wkbMultiPoint,
+                      ogr.wkbMultiLineString,
+                      ogr.wkbGeometryCollection
+                      )
 
     def __init__(self, wOSMFile, wOSMdb, args=None):
         self.wOSMFile = wOSMFile
         self.wOSMdb = wOSMdb
         self.args = args
         self.use_spatialite = True
+
+        self.relations_centroids = dict()
+        self.ways_centroids = dict()
+
+    @staticmethod
+    def _MBR(geom):
+        points = geom.GetPoints()
+        if points:
+            return {'min': {'lon': min([p[0] for p in points]),
+                            'lat': min([p[1] for p in points])
+                            },
+                    'max': {'lon': max([p[0] for p in points]),
+                            'lat': max([p[1] for p in points])
+                            }
+                    }
+
+    @staticmethod
+    def _get_boundpoints(mbr):
+        minpoint = ogr.Geometry(ogr.wkbPoint)
+        minpoint.AddPoint(mbr['min']['lon'], mbr['min']['lat'])
+        maxpoint = ogr.Geometry(ogr.wkbPoint)
+        maxpoint.AddPoint(mbr['max']['lon'], mbr['max']['lat'])
+        return minpoint, maxpoint
+
+    @staticmethod
+    def _distance_reproject(minpoint, maxpoint, sourceSR):
+        targetSR = osr.SpatialReference()
+        targetSR.ImportFromEPSG(23032)
+        coordTrans = osr.CoordinateTransformation(sourceSR, targetSR)
+        minpoint.Transform(coordTrans)
+        maxpoint.Transform(coordTrans)
+        return minpoint.Distance(maxpoint)
+
+    def import_data(self):
+        self.ds = ogr.Open(self.wOSMFile)
+        return self.ds
+
+    def 
+        i = 0
+        layers = []
+        while self.ds.GetLayerByIndex(i) is not None:
+            layers.append(self.ds.GetLayerByIndex(i))
+            i = i + 1
+
+        for lyr in layers:
+
+            count_feats = 0
+            for feat in lyr:
+
+                count_feats = count_feats + 1
+
+                geom = feat.geometry()
+                geom_type = geom.GetGeometryType()
+
+                if geom_type in self.NODE_TYPES:
+                    continue
+                if geom_type in self.WAY_TYPES:
+                    osm_type = 'w'
+                elif geom_type in self.RELATION_TYPES:
+                    osm_type = 'r'
+                else:
+                    print 'Error: unknown OSM type'
+                    import pdb
+                    pdb.set_trace()
+
+                osm_id = feat['osm_id']
+
+                centroid = geom.Centroid()
+                x = centroid.GetX()
+                y = centroid.GetY()
+
+                print osm_type + str(osm_id)
+
+                if geom_type in WAY_TYPES or geom_type in RELATION_TYPES:
+                    mbr = MBR(geom)
+                    minpoint, maxpoint = get_boundpoints(mbr)
+
+                    sourceSR = lyr.GetSpatialRef()
+                    dist = distance_reproject(minpoint, maxpoint, sourceSR)
+
+    def drop_database(self):
+        pass
 
 
 class OSMcentroidsSpatialite(object):
@@ -84,7 +174,7 @@ class OSMcentroidsSpatialite(object):
 
             else:
                 if self.args.import_data:
-                    self.import_data_in_sqlite_db()
+                    self.import_data()
 
                 if self.args.ways:
                     self.create_ways_centroids()
@@ -98,7 +188,7 @@ class OSMcentroidsSpatialite(object):
                 if self.args.update_relations:
                     self.update_relations_with_dims()
 
-    def import_data_in_sqlite_db(self):
+    def import_data(self):
         """Import OSM data with Wikipedia tag in a sqlite database to calculate
            centroids
         """

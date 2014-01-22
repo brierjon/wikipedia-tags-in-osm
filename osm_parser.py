@@ -125,7 +125,7 @@ class ParseOSMData():
             print "\n* File del database SQLite con gli oggetti OSM con tag Wikipedia assente."
             print "o da aggiornare (il file è da aggiornare se lo script è stato lanciato con l'opzione -d o -u)"
             print "\n  Import dei dati"
-            centroids.import_data_in_sqlite_db()
+            centroids.import_data()
             print "\n  Import dei dati completato"
 
         print "-- Provo a leggere i centroidi delle way dal database"
