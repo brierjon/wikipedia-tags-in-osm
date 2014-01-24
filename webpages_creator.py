@@ -49,12 +49,8 @@ class Helpers:
         return classe, progressString
 
     def wikipedia_link(self, item):
-        text = item.name.replace("_", " ").replace("\"", "&quot;")
-        if isinstance(item, Article):
-            itemType = self.app._("article")
-        elif isinstance(item, Category):
-            itemType = self.app._("category")
-        title = self.app._("See {0}: {1}").format(itemType, text)
+        text = item.name.replace("_", " ")
+        title = "Vedi %s: %s" % (item.typ.lower(), text.replace("\"", "&quot;"))
         cssClass = ' class="wikipedia_link"'
         link = self.url_to_link(item.wikipediaUrl, title, text, None, cssClass)
         return link
@@ -87,14 +83,14 @@ class Helpers:
         url = "http://localhost:8111/"
         if mode == "download":
             url += "import?url=http://overpass.osm.rambler.ru/cgi/interpreter?data=" + data
-            title = self.app._("Download in JOSM")
+            title = "Scarica in JOSM"
         elif mode == "load_and_zoom":
             left = data[1] - 0.0005
             right = data[1] + 0.0005
             top = data[0] + 0.0005
             bottom = data[0] - 0.0005
             url += "load_and_zoom?left=%f&amp;right=%f&amp;top=%f&amp;bottom=%f" % tuple((left, right, top, bottom))
-            title = self.app._("Zoom with JOSM nearby the object that must be tagged")
+            title = "Zooma in JOSM vicino all'oggetto da taggare"
         link = self.url_to_link(url, title, None, img)
         return link
 
@@ -105,14 +101,14 @@ class Helpers:
         elif editor == 'Potlatch2':
             url += 'editor=potlatch2'
         url += '#map=%s/%s/%s' % (zoom, data[0], data[1])
-        title = self.app._("Zoom with browser, {0} editor, nearby the object that must be tagged").format(editor)
+        title = "Zooma col browser, editor %s, vicino all'oggetto da taggare" % editor
         link = self.url_to_link(url, title, title, img)
         return link
 
     def overpass_turbo_link(self, query, cssClass=""):
         url = 'http://overpass-turbo.eu/index.html?Q=%s&amp;R' % urllib.quote_plus(query)
-        title = self.app._("View as clickable map, image... (Overpass Turbo)")
-        img = "{{root}}img/Overpass-turbo.png"
+        title = "Visualizza come mappa cliccabile, immagine... (Overpass Turbo)"
+        img = "../img/Overpass-turbo.png"
         if cssClass != "":
             cssClass = ' class="%s"' % cssClass
         link = self.url_to_link(url, title, None, img, cssClass)
@@ -129,26 +125,30 @@ class Helpers:
         #create links to OSM web pages
         for osmId in osmIds:
             url = "http://www.openstreetmap.org/browse/%s/%s" % (osmTypeAbbr[osmId[0]], osmId[1:])
-            link = self.url_to_link(url, "%s" % self.app._("Go to OSM web page of this object"), osmId[1:])
+            link = self.url_to_link(url, "%s" % "Vedi pagina OSM", osmId[1:])
             links[osmTypeAbbr[osmId[0]] + "s"].append(link)
         osmIdsString = ""
         for osmType, linksList in links.iteritems():
             if len(linksList) > 0:
                 if osmIdsString != "":
-                    osmIdsString += "<br />"
-                img = '<img title="%s" src="%s%s.png">' % (osmType[:-1], "{{root}}img/", osmType)
+                    osmIdsString += "<br>"
+                if isinstance(item, Article):
+                    imgPath = "../img/"
+                else:
+                    imgPath = "./img/"
+                img = '<img title="%s" src="%s%s.png">' % (osmType[:-1], imgPath, osmType)
                 osmIdsString += "%s %s" % (img, ", ".join(linksList))
         if isinstance(item, Article):
             #put the string into a div
             osmDivId = item.ident
-            osmIdsString = '<div id="%s" style="display:none"><br />%s</div>' % (osmDivId, osmIdsString)
+            osmIdsString = '<div id="%s" style="display:none"><br>%s</div>' % (osmDivId, osmIdsString)
         return links, osmIdsString
 
     def missing_template_link(self, article):
-        img_title = self.app._("Wikipedia page is missing the coordinates' template")
-        img_src = "{{root}}img/no_template.png"
+        img_title = "Sulla pagina Wikipedia manca il template coord"
+        img_src = "../img/no_template.png"
         img_tag = '<img src="{src}" title="{title}"'\
-                  ' class="articleLinkImg" />'.format(src=img_src,
+                  ' class="articleLinkImg" />'.format(src=img_src, 
                                                       title=img_title)
         span_tag = '<span class="missing_template_alert" {{data}}>'\
                    '{img}</span>'.format(img=img_tag)
@@ -184,8 +184,8 @@ class Helpers:
         url += "&amp;bbox=%s" % self.app.COUNTRYBBOX
         url += "&amp;cat=%s" % urllib.quote_plus(category.name.encode("utf-8"))
         url += "&amp;key=*&amp;value=*&amp;basedeep=10&amp;types=*&amp;request=Submit&amp;iwl=yes"
-        title = self.app._("Search objects by name and add tag them automatically (WIWOSM add-tags)")
-        img = "{{root}}img/add-tags.png"
+        title = "Cerca oggetti ed aggiungi tag (WIWOSM add-tags)"
+        img = "../img/add-tags.png"
         link = self.url_to_link(url, title, None, img)
         return link
 
@@ -203,14 +203,14 @@ class Helpers:
         code = '<a href="%s" title="%s"%s%s>%s</a>' % (url, title, target, cssClass, textOrImg)
         return code
 
-    def tagged_article_links(self, article):
+    def tagged_article_links(self, app, article):
         """Create links for tagged article from OSM objects to various
            services
         """
         #WIWOSM link
-        wiwosmUrl = "http://toolserver.org/~kolossos/openlayers/kml-on-ol-json3.php?lang=%s&amp;title=%s" % (self.app.WIKIPEDIALANG, article.name)
-        wiwosmTitle = self.app._("See Wikipedia map (WIWOSM)")
-        wiwosmImg = "{{root}}img/wiwosm.png"
+        wiwosmUrl = "http://toolserver.org/~kolossos/openlayers/kml-on-ol-json3.php?lang=%s&amp;title=%s" % (app.WIKIPEDIALANG, article.name)
+        wiwosmTitle = "Vedi mappa Wikipedia (WIWOSM)"
+        wiwosmImg = "../img/wiwosm.png"
         wiwosmLink = self.url_to_link(wiwosmUrl, wiwosmTitle, None, wiwosmImg)
 
         #Show a div with OSM ids of the article
@@ -218,17 +218,17 @@ class Helpers:
         osmLinks, osmIdsDiv = self.osm_ids_string(article)
         #link for showing the div
         osmUrl = "javascript:showHideDiv(\'%s\');" % article.ident
-        osmLinkTitle = self.app._("See OSM web page")
+        osmLinkTitle = "Vedi pagina OSM"
         #check what kinds of OSM primitive are tagged and use the
         #right icon
         osmTypeAbbr = [osmType[0] for osmType in osmLinks if osmLinks[osmType] != []]
-        osmLinkImg = "{{root}}img/osm_%s.png" % "".join(sorted(osmTypeAbbr))
+        osmLinkImg = "../img/osm_%s.png" % "".join(sorted(osmTypeAbbr))
         osmLink = self.url_to_link(osmUrl, osmLinkTitle, None, osmLinkImg, "", None)
 
         query = self.overpass_query(article)
 
         #JOSM remote control link
-        img = "{{root}}img/josm.png"
+        img = "../img/josm.png"
         josmLink = self.josm_link("download", query, img)
 
         #Overpass Turbo link
@@ -238,22 +238,22 @@ class Helpers:
         code += '\n      %s ' % osmLink
         code += '\n      %s ' % josmLink
         code += '\n      %s' % overpassTurboLink
-        if self.app.args.show_missing_templates and hasattr(article, "hasTemplate"):
+        if app.args.show_missing_templates and hasattr(article, "hasTemplate"):
             if not article.hasTemplate:
                 code += '\n      %s' % self.missing_template_link(article)
         code += '\n      %s' % osmIdsDiv
         return code
 
-    def non_tagged_article_links(self, article):
+    def non_tagged_article_links(self, app, article):
         """Create links to various services for an article not tagged in OSM yet
         """
         if hasattr(article, "wikipediaCoords"):
             #the article is not tagged but Wikipedia knows its coordinates
-            img = "{{root}}img/josm_load_and_zoom.png"
-            img_id = "{{root}}img/id.png"
+            img = "../img/josm_load_and_zoom.png"
+            img_id = "../img/id.png"
             if article.wikipediaCoordsSource == 'Nuts4Nuts':
-                img = "{{root}}img/josm_load_and_zoom_blue.png"
-                img_id = "{{root}}img/id_blue.png"
+                img = "../img/josm_load_and_zoom_blue.png"
+                img_id = "../img/id_blue.png"
             code = self.josm_link("load_and_zoom", article.wikipediaCoords,
                                   img)
             code += '\n      %s ' % self.edit_link(article.wikipediaCoords,
@@ -276,87 +276,31 @@ class Helpers:
 
 ### Webpages creator ###################################################
 class Creator():
-    def __init__(self, app, locale_langcode):
+    def __init__(self, app):
         self.app = app
-        self.locale_langcode = locale_langcode
-        self.env = Environment(extensions=['jinja2.ext.i18n',
-                                      'jinja2.ext.autoescape'],
-                          loader=FileSystemLoader("templates"),
-                          trim_blocks=True,
-                          lstrip_blocks=True)
-        self.env.install_gettext_translations(self.app.translations)
-
         #When selectNonMappable==True the cells of tables in webpages
         #can be clicked, to create list of non mappable articles
         #or categories that can be copied into the file ./data/wikipedia/non_mappable
         selectNonMappable = True if app.clickable_cells == "true" else False
-        app.tagsPerUser = sorted(self.app.users.items(), key=lambda x: x[1], reverse=True)
+        self.homepages = []
+        #Create homepage
+        modes = ["themes", "regions"]
+        if app.args.show_link_to_wikipedia_coordinates:
+            modes.append("map")
+        for modeNumber, mode in enumerate(modes):
+            self.homepages.append(Homepage(app, (modeNumber, mode)).code)
 
-        #Create homepages
-        self.stats_table = self.stats_table()
-        self.homepages = {}
-
-        #themes (index)
-        self.render_index_template("index.html", "themes")
-
-        #regions (index_1)
-        if self.app.regions != []:
-            self.render_index_template("index_1.html", "regions")
-
-        #map (index_2)
-        if self.app.args.show_link_to_wikipedia_coordinates:
-            self.render_index_template("index_2.html", "map")
-
-        #help (index_3)
-        self.render_index_template("index_3.html", "help")
-
-        #categories (subpages)
-        helpers = Helpers(app)
-        print " - render categories subpages"
+        #Create categories pages
         for theme in app.themes:
             for category in theme.categories:
-                #articles
-                category.articlesTable = ArticlesTable(app, category, selectNonMappable)
-                #category
+                category.articles_html = ArticlesTable(app, category, selectNonMappable).code
                 for subcategory in category.subcategories:
-                    subcategory.categoryTable = CategoryTable(app, subcategory, selectNonMappable)
+                    subcategory.html = CategoryTable(app, subcategory, selectNonMappable).code
+                category.html = Subpage(app, "themes", "", category, selectNonMappable).code
 
-                categoryTemplate = self.env.get_template('subpage.html')
-                filename = "%s.html" % category.name
-
-                category.html = categoryTemplate.render(app=self.app,
-                                                        selectNonMappable=selectNonMappable,
-                                                        helpers=helpers,
-                                                        mode="themes",
-                                                        root = '../../',
-                                                        path = '/subpages/',
-                                                        filename = filename,
-                                                        item=category)
-                category.html = category.html.replace('{{root}}', '../../')
-                category.html = category.html.replace('{root}', '../../')
-
-        #regions (subpages)
-        if self.app.regions != []:
-            print " - render regions subpages"
-            for region in app.regions:
-                for subcategory in region.subcategories:
-                    subcategory.categoryTable = CategoryTable(app,
-                        subcategory,
-                        selectNonMappable)
-                regionTemplate = self.env.get_template('subpage.html')
-                filename = "%s.html" % region.name
-
-                region.html = regionTemplate.render(app=self.app,
-                                                    selectNonMappable=selectNonMappable,
-                                                    helpers=helpers,
-                                                    mode="regions",
-                                                    root = '../../',
-                                                    path = '/subpages/',
-                                                    filename = filename,
-                                                    item=region)
-
-                region.html = region.html.replace('{{root}}', '../../')
-                region.html = region.html.replace('{root}', '../../')
+        #Create regions pages
+        for region in app.regions:
+            region.html = Subpage(app, "regions", "_1", region, selectNonMappable).code
 
         #Create errors page
         print " - render errors page"
@@ -382,18 +326,160 @@ class Creator():
         #Save all HTML files
         self.save_html_files()
 
-    def render_index_template(self, htmlFile, description):
-        """Add to self.homepages the homepage file and
-           its code rendered from a jinja2 template.
+    def save_html_files(self):
+        """Save webpages as html files
         """
-        print " - render %s (%s)" % (htmlFile, description)
-        indexTemplate = self.env.get_template(htmlFile)
-        code = indexTemplate.render(app=self.app,
-                                    root = '../',
-                                    path = '/',
-                                    filename = htmlFile,
-                                    statsRows=self.stats_table)
-        self.homepages[htmlFile] = code
+        # homepage
+        for i, homepage in enumerate(self.homepages):
+            filename = "index.html"
+            if i > 0:
+                filename = "index_%d.html" % i
+            self.save_file(self.homepages[i], filename)
+        # categories pages
+        for theme in self.app.themes:
+            for category in theme.categories:
+                categoryFile = os.path.join("subpages", "%s.html" % category.name)
+                self.save_file(category.html, categoryFile)
+        # regions pages
+        for region in self.app.regions:
+            regionFile = os.path.join("subpages", "%s.html" % region.name)
+            self.save_file(region.html, regionFile)
+        # errors page
+        self.save_file(self.errorsHtml, "errors.html")
+        if not self.app.args.nofx:
+            call("firefox html/index.html", shell=True)
+
+    def save_file(self, text, fileName):
+        fileOut = open(os.path.join(self.app.HTMLDIR, fileName), "w")
+        if isinstance(text, unicode):
+            text = text.encode("utf-8")
+        fileOut.write(text)
+        fileOut.close()
+
+
+### Homepage ###########################################################
+class Homepage(Helpers):
+    def __init__(self, app, modeInfo):
+        """Homepage with two tabs: themes, regions
+        """
+        (modeNumber, mode) = modeInfo
+        modesNames = ["Temi", "Regioni"]
+        modesTitles = ["Visualizza categorie per tema",
+                       "Visualizza categorie per regione"]
+        if app.args.show_link_to_wikipedia_coordinates:
+            modesNames.append("Mappa")
+            modesTitles.append("Visualizza mappa con articoli da taggare")
+        self.app = app
+        code = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" http://www.w3.org/TR/html4/loose.dtd>'
+        #Head
+        code += '\n<html>\n  <head>'
+        code += '\n    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">'
+        code += '\n    <title>Articoli di Wikipedia mappabili in OSM</title>'
+        if self.app.args.bitly:
+            stylecss = "http://bit.ly/1brC3Kk"
+        else:
+            stylecss = os.path.join("css", "style.css")
+        code += '\n    <link rel="stylesheet" type="text/css" href="%s">' % stylecss
+        code += '\n    <script type="text/javascript" charset="utf-8">'
+        code += '\n      function showHideDiv(elementid){'
+        code += '\n        if (document.getElementById(elementid).style.display == "none"){'
+        code += '\n            document.getElementById(elementid).style.display = "";'
+        code += '\n            }'
+        code += '\n        else {'
+        code += '\n            document.getElementById(elementid).style.display = "none";'
+        code += '\n            }'
+        code += '\n        }'
+        code += '\n    </script>'
+        if app.args.show_link_to_wikipedia_coordinates:
+            code += '\n    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7/leaflet.css" />'
+            code += '\n    <!--[if lte IE 8]><link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7/leaflet.ie.css" /><![endif]-->'
+            code += '\n    <script type="text/javascript" src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>'
+            code += '\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">'
+            code += '\n    <!-- MarkerCluster CSS and JS -->'
+            code += '\n    <link rel="stylesheet" href="./css/screen.css" />'
+            code += '\n    <link rel="stylesheet" href="./css/MarkerCluster.css" />'
+            code += '\n    <link rel="stylesheet" href="./css/MarkerCluster.Default.css" />'
+            code += '\n    <!--[if lte IE 8]><link rel="stylesheet" href="../dist/MarkerCluster.Default.ie.css" /><![endif]-->'
+            code += '\n    <script type="text/javascript"  src="js/leaflet.markercluster-src.js"></script>'
+            code += '\n    <!-- Labelling CSS and JS -->'
+            code += '\n    <link rel="stylesheet" href="./css/leaflet.label.css" />'
+            code += '\n    <script type="text/javascript" src="./js/leaflet.label.js"></script>'
+            code += '\n    <script type="text/javascript" src="./GeoJSON/coords.js"></script>'
+        code += '\n  </head>'
+        #Body
+        if app.args.show_link_to_wikipedia_coordinates:
+            code += '\n<body onload="init()">'
+        else:
+            code += '\n<body>'
+        code += '\n  <div id="update_time">Aggiornamento: %s</div>' % self.app.UPDATETIME
+        code += '\n  <div id="header">'
+        code += '\n    <h1><a id="top"></a>Articoli Wikipedia mappabili in OSM</h1>'
+        code += '\n    <p>Liste di articoli Wikipedia (IT) mappabili in OpenStreetMap, tramite il tag "<b><a href="http://wiki.openstreetmap.org/wiki/Wikipedia" target="_blank">wikipedia</a> = it:Titolo dell\'articolo</b>".</p>'
+        code += '\n    <!-- Informations -->'
+        code += '\n    <p><a id="description" href="javascript:showHideDiv(\'info\');"><img src="./img/info.png" class="infoImg"> Informazioni e conteggi</a> | <a href="errors.html" title="Visualizza tag sospetti">Tag sospetti</a></p>'
+        #Info
+        code += '\n    <div id="info" style="display:none">'
+        if self.app.users != {}:
+            code += self.users_table()
+        code += self.stats_table()
+        code += '\n      <h2></h2>'
+        code += '\n      <ul>'
+        code += '\n        <li>Gli oggetti taggati compaiono in Wikipedia <a href="http://toolserver.org/~kolossos/openlayers/kml-on-ol.php?lang=it&amp;uselang=de&amp;params=41.89_N_12.491944444444_E_region%3AIT_type%3Alandmark&amp;title=Colosseom&amp;zoom=18&amp;lat=41.89&amp;lon=12.49284&amp;layers=B00000FTTTF">su una mappa</a> (progetto <a href="http://wiki.openstreetmap.org/wiki/WIWOSM" target="_blank">WIWOSM</a>).</li>'
+        code += '\n        <li>La presenza di questi tag migliora i risultati delle ricerche eseguite su www.openstreetmap.org (Nominatim).</li>'
+        code += '\n      </ul>'
+        code += '\n      <h2>Come</h2>'
+        code += '\n      <ul>'
+        code += '\n        <li>Aggiungere all\'oggetto in OSM il tag <b>"wikipedia=it:Titolo dell\'articolo"</b>, lasciando gli spazi tra le parole.<br>Basta <b>una sola lingua</b>, se l\'articolo è già taggato in una lingua straniera non occorre aggiungere quella italiana (vedi <a href="http://wiki.openstreetmap.org/wiki/Wikipedia" target="_blank"> eccezioni</a> sul Wiki di OSM).</li>'
+        code += '\n      </ul>'
+        code += '\n      <h2>Strumenti utili per aggiungere tag</h2>'
+        code += '\n      <ul>'
+        code += '\n        <li><a href="http://josm.openstreetmap.de/wiki/Help/Plugin/Wikipedia" target="_blank">Plugin Wikipedia</a> per <a href="http://wiki.openstreetmap.org/wiki/IT:JOSM" target="_blank">JOSM</a>.</li>'
+        code += '\n        <li><a href="http://wiki.openstreetmap.org/wiki/JOSM/Plugins/RemoteControl/Add-tags" target="_blank">add-tags</a>, si può usare questo servizio anche cliccando sulle icone <img src="./img/add-tags.png"> presenti in queste pagine.'
+        code += '\n      </ul>'
+        code += '\n      <h2>Difetti nelle liste</h2>'
+        code += '\n      <ul>'
+        code += '\n        <li> Articoli o categorie <b>non mappabili</b>, ad es. "es. Dipinti nel Museo Tal Dei Tali", possono essere rimossi dalla pagina, se segnalati (vedi mail).</li>'
+        code += '\n        <li> Può accadere che in una sottocategoria ricadano articoli non riguardanti il tema di partenza. Se questi sono mappabili vengono comunque mostrati in tabella.</li>'
+        code += '\n        <li> Articoli o sottocategorie appartenenti a più categorie possono ripetersi più volte in una stessa pagina (i conteggi ne tengono conto).</li>'
+        code += '\n      </ul>'
+        code += '\n      <h2>Programma per generare le pagine</h2>'
+        code += '\n      <p>Codice: <a href="https://github.com/simone-f/wikipedia-tags-in-osm" target="_blank">wikipedia-tags-in-osm %s</a> (GPLv3)\
+<br>Autore: <a href="mailto:groppo8@gmail.com">Simone F.</a></p>' % self.app.version
+        code += '\n      <p>Contributors: Luca Delucchi, Cristian Consonni</p>'
+        code += '\n      <p><br>Riconoscimenti ed attribuzioni:</p>'
+        code += '\n      <p>Servizi linkati da queste pagine: \
+<a href="http://wiki.openstreetmap.org/wiki/WIWOSM">WIWOSM</a> (master, Kolossos), \
+<a href="http://wiki.openstreetmap.org/wiki/JOSM/Plugins/RemoteControl/Add-tags" target="_blank">add-tags</a> (Kolossos), \
+<a href="http://overpass-turbo.eu/" target="_blank">OverpassTurbo</a> (tyr.asd).</p>'
+        code += '\n      <p>Servizi usati per creare le pagine: \
+<a href="http://toolserver.org/%7Edaniel/WikiSense/CategoryIntersect.php" target="_blank">CatScan</a> (Duesentrieb), \
+<a href="http://toolserver.org/~kolossos/wp-world/pg-dumps/wp-world/">Wikipedia coordinates</a> (Kolossos), \
+<a href="http://nuts4nutsrecon.spaziodati.eu/">Nuts4Nuts</a>, \
+<a href="http://tools.wmflabs.org/catscan2/quick_intersection.php">quick_intersection</a> (Magnus Manske).</p>'
+        code += '\n      <p>Icone dei temi: <a href="https://github.com/mapbox/maki" target="_blank">Maki</a> (BSD)<br>'
+        code += '\n      Stemmi regionali: <a href="http://www.araldicacivica.it" target="_blank">www.araldicacivica.it</a> (<a href="http://creativecommons.org/licenses/by-nc-nd/3.0/it/">CC BY-NC-ND 3.0</a>)<br>'
+        code += '\n      Icone di nodi, way, relazioni ed Overpass Turbo da <a href="http://wiki.openstreetmap.org/">Wiki OSM</a>.</p>'
+        code += '\n    </div>'
+        #Tabs: themes|regions|map
+        code += '\n    <div id="tabs">'
+        code += '\n      <ul>'
+        for n, modeName in enumerate(modesNames):
+            tabid = ""
+            filename = "./index"
+            if n > 0:
+                filename += "_%d" % n
+            filename += ".html"
+            if n == modeNumber:
+                tabid = ' id ="selected"'
+            code += '\n        <li%s><a title="%s" href="%s">%s</a></li>' % (tabid, modesTitles[n], filename, modeName)
+        code += '\n       </ul>'
+        code += '\n    </div>'
+        code += '\n  </div>'
+        code += '\n  <div id="content">'
+        code += self.homepage_tab(mode).encode("utf-8")
+        code += '\n  </div>'
+        code += '\n</body>\n</html>'
+        self.code = code
 
     def stats_table(self):
         """Return html code of a table with the numbers of tagged/non tagged
@@ -401,22 +487,31 @@ class Creator():
         """
         red = "#cc0000"
         green = "#00cc7a"
-        modes = [("to do", self.app._("Still to tag")),
-                 ("mapped", self.app._("Tagged")),
-                 ("total", self.app._("Total"))]
+        modes = [("to do", "Da mappare"),
+                 ("mapped", "Mappati"),
+                 ("total", "Totali")]
 
-        #days for stats
+        code = '\n      <table id="stats">'
+        code += '\n        <tr>'
+        code += '\n          <th>Articoli</th>'
         if len(self.app.dates) >= 11:
             dates = [self.app.dates[0]] + self.app.dates[-9:]
             days = [self.app.days[0]] + self.app.days[-9:]
         else:
             dates = self.app.dates
             days = self.app.days
-
-        rows = [[self.app._("Articles")] + dates]
+        #dates
+        for date in dates:
+            code += '\n          <th>%s</th>' % date
+        code += '\n        </tr>'
         for mode, description in modes:
-            row = []
-            row.append(description)
+            #first cell
+            if mode == "total":
+                code += '\n        <tr>'
+                code += '\n          <th colspan="%d">Tag</th>' % (len(days) + 1)
+                code += '\n        </tr>'
+            code += '\n        <tr>'
+            code += '\n          <td>%s</td>' % description
             #data
             for index, day in enumerate(days):
                 value = int(day[mode])
@@ -437,30 +532,27 @@ class Creator():
                                 color = green
                             else:
                                 color = red
-                        differenceStr = ' <span style="color: %s">(%s)</span>' % (color, differenceStr)
-                row.append("%s%s" % (str(value), differenceStr))
-            rows.append(row)
-        return rows
+                        differenceStr = ' <span style = "color: %s">(%s)</span>' % (color, differenceStr)
+                code += '\n          <td>%s%s</td>' % (value, differenceStr)
+            code += '\n        </tr>'
+        code += '\n      </table>'
+        return code
 
-    def save_html_files(self):
-        """Save webpages as html files
+    def users_table(self):
+        """Return html code of a table with the mappers which added
+           tags from the previous run of the program
         """
-        # homepage
-        for fileName, homepage in self.homepages.iteritems():
-            self.save_file(homepage, fileName)
-        # categories pages
-        for theme in self.app.themes:
-            for category in theme.categories:
-                categoryFile = "%s.html" % category.name
-                self.save_file(category.html, categoryFile, subdir="subpages")
-        # regions pages
-        for region in self.app.regions:
-            regionFile = "%s.html" % region.name
-            self.save_file(region.html, regionFile, subdir="subpages")
-        # errors page
-        self.save_file(self.errorsHtml, "errors.html")
-        # non_mapable page
-        self.save_file(self.nonMappableHtml, "non_mappable.html")
+        #users = [[user name, tags num], ...]
+        users = sorted(self.app.users.items(), key=lambda x: x[1], reverse=True)
+        code = '\n      <div id="usersdiv">'
+        code += '\n      <table id="users">'
+        code += '\n        <tr><th>Mapper</th><th>Tag</th></tr>'
+        for user, tagsNumber in users:
+            mapperLink = '<a href="http://www.openstreetmap.org/user/%s/">%s</a>' % (urllib.quote_plus(user.encode("utf-8")), user.encode("utf-8"))
+            code += '\n        <tr><td>%s</td><td>%s</td></tr>' % (mapperLink, tagsNumber)
+        code += '\n      </table>'
+        code += '\n      </div>'
+        return code
 
     def homepage_tab(self, mode):
         """Return html code of homepage tabs: themes and regions
@@ -499,32 +591,101 @@ Se un articolo non è mappabile in OSM, ad es. il luogo in cui si è svolto un e
             code += '\n   <!-- <div class="overlay">Articoli da taggare: <script type="application/x-javascript">document.write(coords.features.length);</script></div> -->'
         return code
 
-    def save_file(self, text, fileName, subdir=None):
+    def main_index(self, items, mode):
+        """Return html code of a table with themes or regions, to be used
+           as main index of the homepage
+        """
+        code = '\n    <table id="home_index">'
+        code += '\n      <tr>'
+        columns = 5
+        rows = [items[i:i + columns] for i in range(0, len(items), columns)]
+        for row in rows:
+            code += '\n      <tr>'
+            for item in row:
+                iconFile = "./img/%s/%s.png" % (mode, item.name.lower())
+                if os.path.isfile(os.path.join(self.app.HTMLDIR, iconFile)):
+                    icon = '<img src="%s">' % iconFile
+                else:
+                    icon = ""
+                code += '\n        <td><a href="#%s">%s%s</a></td>' % (item.name, icon, item.name.replace("_", " "))
+            code += '\n      </tr>'
+        code += '\n    </table>'
+        return code
 
-        # output directory (html/locale_locale_langcode)
-        outDir = os.path.join(self.app.HTMLDIR, self.locale_langcode)
-        if subdir:
-            outDir = os.path.join(self.app.HTMLDIR,
-                                  self.locale_langcode,
-                                  subdir
-                                  )
 
-        # Try to make the directory, catch exception if it exists
-        # (and skik creation)
-        try:
-            os.makedirs(outDir)
-        except OSError as e:
-            # skip directory creation
-            # print 'Skipping directory {0} creation: {1}'.format(
-            #     outDir, str(e.strerror))
-            pass
+### Subpage ############################################################
+class Subpage(Helpers):
+    def __init__(self, app, mode, suffix, item, selectNonMappable):
+        """A webpage with data about a main category or a region.
+        """
 
-        fileOut = open(os.path.join(outDir, fileName), "w")
+        self.app = app
+        code = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" http://www.w3.org/TR/html4/loose.dtd>'
+        code += '\n<html>\n    <head>'
+        code += '\n        <meta http-equiv="Content-type" content="text/html;charset=UTF-8">'
+        code += '\n        <title>%s</title>' % self.app.homePageTitle
+        code += '\n        <link rel="stylesheet" type="text/css" href="../css/style.css">'
+        code += '\n        <script type="text/javascript" src="//code.jquery.com/jquery-1.10.2.min.js"></script>'
+        code += '\n        <script type="text/javascript" src="//cdn.leafletjs.com/leaflet-0.7.1/leaflet.js"></script>'
+        code += '\n        <script>'
+        code += '\n         $(document).ready(function(){});'
+        code += '\n            function showHideNonMappable (elementid){'
+        code += '\n                var cssclass = "table#" + elementid + " td.non_mappable";'
+        code += '\n                if ($(cssclass).css("display") != "table-cell"){'
+        code += '\n                    $(cssclass).css("display", "table-cell");}'
+        code += '\n                else {'
+        code += '\n                   $(cssclass).css("display", "none");}};'
+        code += '\n        </script>'
+        if selectNonMappable:
+            code += '\n        <script type="text/javascript">'
+            code += '\n          var nonMappableCategories = "";'
+            code += '\n          var nonMappableArticles = "";'
+            code += '\n          function getName(cellThatWasClicked){'
+            code += '\n            name = decodeURIComponent(cellThatWasClicked.firstChild)'
+            code += '\n            name = name.replace("http://it.wikipedia.org/wiki/","");'
+            code += '\n            name = name.replace("_"," ");'
+            code += '\n            if (name.substring(0,10) == "Categoria:"){'
+            code += '\n                nonMappableCategories += "|" + name.replace("Categoria:","");'
+            code += '\n               }'
+            code += '\n            else {'
+            code += '\n               nonMappableArticles += "|" + name;'
+            code += '\n            }'
+            code += '\n          document.getElementById("nonMappableCategories").innerHTML = nonMappableCategories;'
+            code += '\n          document.getElementById("nonMappableArticles").innerHTML = nonMappableArticles;'
+            code += '\n          cellThatWasClicked.style.backgroundColor = "#ffb2b2";'
+            code += '\n          }'
+            code += '\n        </script>'
+        code += '\n        <script type="text/javascript" charset="utf-8">'
+        code += '\n          function showHideDiv(elementid){'
+        code += '\n            if (document.getElementById(elementid).style.display == "none"){'
+        code += '\n                document.getElementById(elementid).style.display = "";'
+        code += '\n                }'
+        code += '\n            else {'
+        code += '\n                  document.getElementById(elementid).style.display = "none";'
+        code += '\n                  }'
+        code += '\n          }'
+        code += '\n        </script>'
+        code += '\n        <script src="../app/js/wtosm.js" type="text/javascript"></script>'
+        code += '\n        <script src="../app/js/app/preview.js" type="text/javascript"></script>'
+        code += '\n    </head>'
+        code += '\n<body>'
+        code += '\n\n<!-- Header -->'
+        code += '\n<div id="header">'
+        code += '\n    <div id="go_to_home"><a href="../index%s.html">&#8592; Tutte le categorie</a></div>' % suffix
+        code += '\n    <div id="update_time">'
+        if mode == "themes":
+            code += '      Aggiornamento articoli in categoria: %s<br>' % item.updateTime
+        code += '\n      Aggiornamento stato mappatura: %s' % self.app.UPDATETIME
+        code += '\n    </div>'
+        code += '\n</div>'
 
-        if isinstance(text, unicode):
-            text = text.encode("utf-8")
-        fileOut.write(text)
-        fileOut.close()
+        code += '\n\n<!-- Content -->'
+        code += '\n<div id="content">'
+
+        code += '\n<div id="app-popup-main" class="app-popup">'
+        code += '\n  <a href="javascript:void(0)" class="close"></a>'
+        code += '\n  <div id="app-popup-main-container" class="app-popup-container">Container</div>'
+        code += '\n</div>'
 
         # Title. Main category or region name
         if mode == "themes":
@@ -535,14 +696,14 @@ Se un articolo non è mappabile in OSM, ad es. il luogo in cui si è svolto un e
             img = '<img src="../img/%s/%s.png" class="item_img">' % (mode, item.name.lower())
             code += '\n<h2>%s<a id="index"></a>%s</h2>' % (img, item.name.replace("_", " "))
 
-### Subpage ############################################################
-class ArticlesTable(Helpers):
-    def __init__(self, app, item, selectNonMappable):
-        """Return an html table with articles of a ctagory
-        """
-        self.attr = ''
-        self.content = []
-        self.app = app
+        if selectNonMappable:
+            code += '\n<div id="selectNonMappable">'
+            code += '\n  Per contrassegnare alcune categorie ed articoli come "non mappabili": clicca sulle loro celle, copia le stringhe qui sotto ed incollale nel file "./data/wikipedia/non_mappable".<br><br>'
+            code += '\n  Categorie:'
+            code += '\n  <div id="nonMappableCategories">&nbsp;</div><br>'
+            code += '\n  Articoli:'
+            code += '\n  <div id="nonMappableArticles">&nbsp;</div>'
+            code += '\n</div>'
 
         # Legenda
         code += '\n\n<!-- Legenda -->'
@@ -558,37 +719,102 @@ class ArticlesTable(Helpers):
 
         # Articles table
         if item.articles != []:
-            self.attr  += ' class="data"'
-            rows = []
+            code += '\n\n<!-- Articles -->'
+            articlesProgressString = ""
+            if item.titles != []:
+                articlesProgressClass, articlesProgressString = self.progress_strings(item, "articles")
+            code += '\n\n<h3><a href="#index">&#8593;</a> <a id="Articles"></a>Articoli %s</h3>' % articlesProgressString
+            divId = "%s_articles" % item.ident
             if not item.articlesAreAllMappable:
-                self.attr += ' id="%s_articles"' % item.ident
+                code += '\n<div class="showHideNonMappable"><a href=\'javascript:showHideNonMappable("%s");\' title="Visualizza articoli non mappabili">Mostra non mappabili</a></div>' % divId
+            code += '\n%s\n' % item.articles_html
 
-            for article in item.articles:
-                rows.append([])
+        # Subcategories tables
+        code += '\n\n<!-- Subcategories -->'
+        for subcategory in item.subcategories:
+            progressString = ""
+            if subcategory.isMappable:
+                progressClass, progressString = self.progress_strings(subcategory, "allMArticles")
+            if subcategory.allTitlesInOSM != []:
+                query = self.overpass_query(subcategory)
+                overpassTurboLink = " %s" % self.overpass_turbo_link(query)
+            else:
+                overpassTurboLink = ""
+            code += '\n\n<h3>'
+            code += '<a href="#index">&#8593;</a> '
+            code += '<a id="%s"></a>' % subcategory.name
+            code += '%s <span class=%s>%s</span>' % (self.wikipedia_link(subcategory), progressClass, progressString)
+            if not len(subcategory.allTitles) == len(subcategory.allTitlesInOSM):
+                code += " %s" % self.add_tags_link(subcategory)
+            code += '%s</h3>' % overpassTurboLink
+            if not subcategory.isAllMappable:
+                code += '\n<div class="showHideNonMappable"><a href="javascript:showHideNonMappable(\'%s\');" title="Mostra anche categorie ed articoli non mappabili">Mostra non mappabili</a></div>' % subcategory.ident
+            code += '\n%s\n' % subcategory.html
+        code += '\n</div>'
+        code += '\n</body>\n</html>'
+        self.code = code
 
-                #Article cell
-                cssclass = ""
-                colspan = ""
-                if not article.isMappable:
-                    cssclass = ' class="non_mappable"'
-                    colspan = ' colspan="2"'
-                onclick = ""
-                if selectNonMappable:
-                    onclick = ' onclick="getName(this);"'
+    def legend_table(self):
+        """Return an html table with the legend
+        """
+        code = '\n  <table id="legend">'
+        code += '\n    <tr><td class="index_done100"></td><td>100% articoli taggati</td></tr>'
+        code += '\n    <tr><td class="index_done099"></td><td>99% articoli taggati</td></tr>'
+        code += '\n    <tr><td class="index_done075"></td><td>75% articoli taggati</td></tr>'
+        code += '\n    <tr><td class="index_done050"></td><td>50% articoli taggati</td></tr>'
+        code += '\n    <tr><td class="index_done025"></td><td>25% articoli taggati</td></tr>'
+        code += '\n    <tr><td class="index_done0"></td><td>0% articoli taggati</td></tr>'
+        code += '\n    <tr><td><img src="../img/add-tags.png"></td><td>Cerca in OSM possibili oggetti corrispondenti agli articoli e taggali facilmente tramite lo strumento <a href="http://wiki.openstreetmap.org/wiki/JOSM/Plugins/RemoteControl/Add-tags" target="_blank">add-tags</a></td></tr>'
+        code += '\n    <tr><td><img src="../img/wiwosm.png"></td><td>Vedi l\'oggetto sulla mappa Wikipedia</td></tr>'
+        code += '\n    <tr><td><img src="../img/josm.png"></td><td>Scarica l\'oggetto in JOSM</td></tr>'
+        code += '\n    <tr><td><img src="../img/osm.png"></td><td>Vedi la pagina OSM dell\'oggetto</td></tr>'
+        code += '\n    <tr><td><img src="../img/Overpass-turbo.png"></td><td>Vedi gli oggetti su Overpass Turbo (mappa cliccabile, esporta come immagine...)</td></tr>'
+        code += '\n    <tr><td><img src="../img/no_template.png"></td><td>All\'articolo su Wikipedia manca il <a href="https://it.wikipedia.org/wiki/Template%3ACoord" target="_blank">template Coord</a>. Clicca su un\'icona per ulteriori informazioni</td></tr>'
+        code += '\n    <tr><td nowrap><img src="../img/josm_load_and_zoom.png"><img src="../img/id.png"></td>'
+        code += '\n      <td>L\'articolo non è taggato ma Wikipedia ne conosce la posizione. Clicca sull\'icona per zoomare con l\'editor JOSM / iD sulla posizione conosciuta e trovare più facilmente l\'oggetto da taggare</td>'
+        code += '\n    </tr>'
+        code += '\n    <tr><td nowrap><img src="../img/josm_load_and_zoom_blue.png"><img src="../img/id_blue.png"></td>'
+        code += '\n      <td>L\'articolo non è taggato ma ne è stata calcolata la posizione approssimata tramite i contenuti dell\'articolo e <a href="https://github.com/SpazioDati/Nuts4Nuts" target="_blank">Nuts4Nuts</a>. Clicca sull\'icona per aprire JOSM alla posizione conosciuta e trovare più facilmente l\'oggetto da taggare</td>'
+        code += '\n    </tr>'
+        code += '\n  </table>'
+        code += '\n</div>'
+        return code.decode("utf-8")
 
-                cell = {"attr": "%s%s%s" % (onclick, cssclass, colspan),
-                        "content": self.wikipedia_link(article)}
-                rows[-1].append(cell)
 
-                #Article tagging status cell
-                if article.isMappable:
-                    if article.inOSM:
-                        links = self.tagged_article_links(article)
-                    else:
-                        links = self.non_tagged_article_links(article)
-                    cell = {"attr": "", "content": links}
-                    rows[-1].append(cell)
-            self.content = rows
+class ArticlesTable(Helpers):
+    def __init__(self, app, item, selectNonMappable):
+        """Return an html table with articles of a ctagory
+        """
+        if item.articles == []:
+            self.code = ""
+            return
+
+        tableId = ""
+        if not item.articlesAreAllMappable:
+            tableId = ' id="%s_articles"' % item.ident
+        code = '\n<table class="data"%s>' % tableId
+        articles = item.articles
+        for article in articles:
+            cssclass = ""
+            colspan = ""
+            if not article.isMappable:
+                cssclass = ' class="non_mappable"'
+                colspan = ' colspan="2"'
+            else:
+                if article.inOSM:
+                    links = self.tagged_article_links(app, article)
+                else:
+                    links = self.non_tagged_article_links(app, article)
+            code += "\n  <tr>"
+            onclick = ""
+            if selectNonMappable:
+                onclick = ' onclick="getName(this);"'
+            code += "\n    <td%s%s%s>%s</td>" % (onclick, cssclass, colspan, self.wikipedia_link(article))
+            if article.isMappable:
+                code += "\n    <td>%s</td>" % links
+            code += "\n  </tr>"
+        code += "\n</table>"
+        self.code = code
 
 
 class CategoryTable(Helpers):
@@ -599,14 +825,14 @@ class CategoryTable(Helpers):
         self.app = app
         self.selectNonMappable = selectNonMappable
         columnsNumber = self.table_columns_number(category) + 1
-
-        self.attr = ' class="data"'
+        tableId = ""
         if not category.isAllMappable:
-            self.attr += ' id="%s"' % category.ident
-
-        self.rows = [[]]
-        self.build_table(category, columnsNumber)
-        self.content = self.rows
+            tableId = ' id="%s"' % category.ident
+        code = '\n<table class="data"%s>' % tableId
+        code += "\n  <tr>"
+        code = self.build_table(code, category, columnsNumber)
+        code += '\n</table>'
+        self.code = code
 
     def table_columns_number(self, category, i=0):
         if category.subcategories != []:
@@ -615,14 +841,13 @@ class CategoryTable(Helpers):
             columnsNumber = i
         return columnsNumber
 
-    def build_table(self, category, columnsNumber, level=0):
+    def build_table(self, code, category, columnsNumber, level=0):
         """Build table by recursively reading subcategories and articles
            of the category
         """
         articles = category.articles
         subcategories = category.subcategories
         isFirstItem = True
-
         #articles
         for article in articles:
             colspan = columnsNumber - level
@@ -632,7 +857,7 @@ class CategoryTable(Helpers):
                 colspan = " colspan=%s" % str(colspan)
             else:
                 colspan = ""
-            self.add_item(article, isFirstItem, colspan, "")
+            code += self.add_item(article, isFirstItem, colspan, "")
             isFirstItem = False
         #subcategories
         for subcategory in subcategories:
@@ -641,18 +866,15 @@ class CategoryTable(Helpers):
                 rowspan = " rowspan=%s" % rowsnumber
             else:
                 rowspan = ""
-            self.add_item(subcategory, isFirstItem, "", rowspan)
+            code += self.add_item(subcategory, isFirstItem, "", rowspan)
             isFirstItem = False
-            self.build_table(subcategory, columnsNumber, level + 1)
+            code = self.build_table(code, subcategory, columnsNumber, level + 1)
+        return code
 
     def add_item(self, item, isFirstItem, colspan, rowspan):
         """Add a cell to the table
         """
-        if not isFirstItem:
-            #new row
-            self.rows.append([])
-
-        #attributes
+        code = "\n  <tr>" if not isFirstItem else ""
         onclick = ""
         if self.selectNonMappable:
             onclick = ' onclick="getName(this);"'
@@ -665,8 +887,7 @@ class CategoryTable(Helpers):
             cssClass = ""
         else:
             cssClass = ' class="%s"' % " ".join(cssClasses)
-
-        #category
+        #Category
         if isinstance(item, Category):
             catData = self.wikipedia_link(item)
             if not len(item.allTitles) == len(item.allTitlesInOSM):
@@ -677,25 +898,17 @@ class CategoryTable(Helpers):
                 query = self.overpass_query(item)
                 linkClass = "overpassTurboLink"
                 catData += "\n %s" % self.overpass_turbo_link(query, linkClass)
-
-            cell = {"attr": "%s%s%s" % (onclick, rowspan, cssClass),
-                    "content": catData}
-            self.rows[-1].append(cell)
-
-        #article
+            code += "\n    <td%s%s%s>%s</td>" % (onclick, rowspan, cssClass, catData)
+        #Article
         if isinstance(item, Article):
-            cell = {"attr": "%s%s%s" % (onclick, colspan, cssClass),
-                    "content": self.wikipedia_link(item)}
-            self.rows[-1].append(cell)
-
+            code += "\n    <td%s%s%s>%s</td>" % (onclick, colspan, cssClass, self.wikipedia_link(item))
             if item.isMappable:
-                #content
-                if item.inOSM:
-                    links = self.tagged_article_links(item)
-                else:
-                    links = self.non_tagged_article_links(item)
-                #attributes
+                #add one more cell with article info (links if tagged)
                 nowrap = ""
+                if item.inOSM:
+                    links = self.tagged_article_links(self.app, item)
+                else:
+                    links = self.non_tagged_article_links(self.app, item)
                 if links != "":
                     nowrap = " NOWRAP"
                 code += "\n    <td%s>%s</td>" % (nowrap, links)
