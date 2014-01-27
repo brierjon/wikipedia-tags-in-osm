@@ -339,10 +339,12 @@ class Creator():
         for theme in self.app.themes:
             for category in theme.categories:
                 categoryFile = os.path.join("subpages", "%s.html" % category.name)
+                category.html = category.html.replace('WTOSMSUBPAGENAME', category.name)
                 self.save_file(category.html, categoryFile)
         # regions pages
         for region in self.app.regions:
             regionFile = os.path.join("subpages", "%s.html" % region.name)
+            region.html = region.html.replace('WTOSMSUBPAGENAME', region.name)
             self.save_file(region.html, regionFile)
         # errors page
         self.save_file(self.errorsHtml, "errors.html")
@@ -783,8 +785,10 @@ class Subpage(Helpers):
 
 class ArticlesTable(Helpers):
     def __init__(self, app, item, selectNonMappable):
-        """Return an html table with articles of a ctagory
+        """Return an html table with articles of a category
         """
+        self.app = app
+
         if item.articles == []:
             self.code = ""
             return
