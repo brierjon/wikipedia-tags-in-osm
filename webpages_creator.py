@@ -398,7 +398,7 @@ class Homepage(Helpers):
             code += '\n    <script type="text/javascript" src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>'
             code += '\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">'
             code += '\n    <!-- MarkerCluster CSS and JS -->'
-            code += '\n    <link rel="stylesheet" href="./css/screen.css" />'
+            code += '\n    <link rel="stylesheet" href="./css/style.css" />'
             code += '\n    <link rel="stylesheet" href="./css/MarkerCluster.css" />'
             code += '\n    <link rel="stylesheet" href="./css/MarkerCluster.Default.css" />'
             code += '\n    <!--[if lte IE 8]><link rel="stylesheet" href="../dist/MarkerCluster.Default.ie.css" /><![endif]-->'
@@ -409,10 +409,7 @@ class Homepage(Helpers):
             code += '\n    <script type="text/javascript" src="./GeoJSON/coords.js"></script>'
         code += '\n  </head>'
         #Body
-        if app.args.show_link_to_wikipedia_coordinates:
-            code += '\n<body onload="init()">'
-        else:
-            code += '\n<body>'
+        code += '\n<body>'
         code += '\n  <div id="update_time">Aggiornamento: %s</div>' % self.app.UPDATETIME
         code += '\n  <div id="header">'
         code += '\n    <h1><a id="top"></a>Articoli Wikipedia mappabili in OSM</h1>'
