@@ -682,7 +682,7 @@ class Subpage(Helpers):
         code += '\n<div id="content">'
 
         code += '\n<div id="app-popup-main" class="app-popup">'
-        code += '\n  <a href="javascript:void(0)" class="close"></a>'
+        code += '\n  <a href="javascript:void(0)" class="close" div="close-button"></a>'
         code += '\n  <div id="app-popup-main-container" class="app-popup-container">Container</div>'
         code += '\n</div>'
 
