@@ -141,7 +141,7 @@ class Helpers:
         if isinstance(item, Article):
             #put the string into a div
             osmDivId = item.ident
-            osmIdsString = '<div id="%s" style="display:none"><br>%s</div>' % (osmDivId, osmIdsString)
+            osmIdsString = '<div id="%s" style="display:none"><br>%s</div>' % (osmDivId + '_div', osmIdsString)
         return links, osmIdsString
 
     def missing_template_link(self, article):
@@ -217,7 +217,7 @@ class Helpers:
         #osm ids div
         osmLinks, osmIdsDiv = self.osm_ids_string(article)
         #link for showing the div
-        osmUrl = "javascript:showHideDiv(\'%s\');" % article.ident
+        osmUrl = "javascript:showHideDiv(\'%s\');" % (article.ident + '_div')
         osmLinkTitle = "Vedi pagina OSM"
         #check what kinds of OSM primitive are tagged and use the
         #right icon
