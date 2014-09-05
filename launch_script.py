@@ -46,7 +46,7 @@ from users import Users
 from webpages_creator import Creator
 import wikipedia_downloader
 import nuts4nuts_infer
-
+import calculate_differences
 
 class App:
     def __init__(self):
@@ -108,6 +108,13 @@ class App:
                             dest='locales',
                             metavar='LANG',
                             help="Generate pages in the specified locales. Default: use the system locale. ")
+        parser.add_argument("--diff",
+                            dest='calculate_differences',
+                            action="store_true",
+                            help="calculate distance from the OSM and Wikipedia"
+                                 "coordinates, flag the article when there are"
+                                 " differences"
+                            )
 
         self.args = parser.parse_args()
         if self.args.category_info or self.args.category_info\
@@ -242,6 +249,12 @@ To repeat the updating process, launch the script again with the `-u` option."
         if self.args.infer_coordinates_from_wikipedia:
             print "\n- Use Nuts4Nuts to infer coordinates of non tagged articles, whose position is unknown by Wikipedia"
             nuts4nuts_infer.infer_coordinates_with_nuts4nuts(self)
+
+        if self.args.calculate_differences:
+            print "\n- Calculate coordinate differences"
+            calculate_differences.calculate(self)
+            print "\n- Save coordinate differences"
+            calculate_differences.save(self)
 
         #For debugging
         # print info about a specific category

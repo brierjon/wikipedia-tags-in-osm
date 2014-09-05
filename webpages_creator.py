@@ -222,9 +222,19 @@ class Helpers:
         code += '\n      %s ' % osmLink
         code += '\n      %s ' % josmLink
         code += '\n      %s' % overpassTurboLink
+
         if self.app.args.show_missing_templates and hasattr(article, "hasTemplate"):
             if not article.hasTemplate:
                 code += '\n      %s' % self.missing_template_link(article)
+            else:
+                if article.distance:
+                    if article.diffStatusOK == 2:
+                        code += '\nAAA'
+                    elif article.diffStatusOK == 1:
+                        code += '\nBBB'
+                    elif article.diffStatusOK == 0:
+                        code += '\nXXX'
+
         code += '\n      %s' % osmIdsDiv
         return code
 
@@ -513,6 +523,23 @@ class ArticlesTable(Helpers):
                         links = self.non_tagged_article_links(article)
                     cell = {"attr": "", "content": links}
                     rows[-1].append(cell)
+
+                if article.distance:
+                    if article.diffStatusOK == 2:
+                        cell = {"attr": " class=diffStatusOK",
+                                "content": "AAA"
+                                }
+                    elif article.diffStatusOK == 1:
+                        cell = {"attr": " class=diffStatusOK",
+                                "content": "BBB"
+                                }
+                    elif article.diffStatusOK == 1:
+                        cell = {"attr": " class=diffStatusNO",
+                                "content": "XXX"
+                                }
+
+                    rows[-1].append(cell)
+
             self.content = rows
 
 
@@ -627,3 +654,19 @@ class CategoryTable(Helpers):
                 #Article tagging status cell
                 cell = {"attr": nowrap, "content": links}
                 self.rows[-1].append(cell)
+
+                if item.distance:
+                    if item.diffStatusOK == 2:
+                        cell = {"attr": " class=diffStatusOK",
+                                "content": "AAA"
+                                }
+                    elif item.diffStatusOK == 1:
+                        cell = {"attr": " class=diffStatusOK",
+                                "content": "BBB"
+                                }
+                    elif item.diffStatusOK == 0:
+                        cell = {"attr": " class=diffStatusNO",
+                                "content": "XXX"
+                                }
+
+                    self.rows[-1].append(cell)

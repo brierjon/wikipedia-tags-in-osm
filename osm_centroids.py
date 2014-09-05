@@ -3,8 +3,8 @@
 #
 #  Copyright 2013 Fondazione Bruno Kessler
 #  Author: <consonni@fbk.eu>
-#  This work has been funded by Fondazione Bruano Kessler (Trento, Italy)
-#  under projects T2DataExchange and LOD4STAT
+#  This work has been funded by Fondazione Bruno Kessler (Trento, Italy)
+#  under project T2DataExchange
 #
 #  This file is part of wikipedia-tags-in-osm.
 #  wikipedia-tags-in-osm is free software: you can redistribute it and/or
@@ -26,6 +26,8 @@ import argparse
 import os
 from pysqlite2 import dbapi2 as spatialite
 from subprocess import Popen, PIPE, call
+
+from query_utils import query_wrapper
 
 
 class OSMcentroids(object):
@@ -76,25 +78,28 @@ class OSMcentroids(object):
         print "Import completed!"
 
     def _query_wrapper(self, query):
-        con = spatialite.connect(self.wOSMdb)
-        con.enable_load_extension(True)
-        try:
-            with con:
-                cur = con.cursor()
-            cmd = "SELECT load_extension('%s');" % self.libspatialitePath
-            cur.execute(cmd)
-            cur.execute(query)
-        except spatialite.OperationalError as error:
-            print "Failed execution of query:\n%s" % query
-            print error
-            print "None table created"
-
-        return cur
+        return query_wrapper(self.wOSMdb, query, self.libspatialitePath)
 
     def create_ways_centroids(self):
-        query = """CREATE TABLE osm_ways_centroids
+        query = """CREATE TABLE IF NOT EXISTS osm_ways_centroids
                    AS SELECT way_id,
                              AsText(Centroid(ST_Collect(Geometry))) as centr,
+                             ST_Transform(
+                                ST_Buffer(
+                                    ST_Transform(
+                                        ST_ConcaveHull(
+                                            ST_Collect(Geometry),
+                                            5.0,
+                                            0
+                                            ),
+                                        3857
+                                        ),
+                                    10
+                                    ),
+                                4326
+                                ) as concave_hull,
+                             ST_ConvexHull(ST_Collect(Geometry)
+                                ) as convex_hull,
                              AsText(
                                 MakePoint(MbrMinX(ST_Collect(Geometry)),
                                           MbrMinY(ST_Collect(Geometry)),
@@ -146,7 +151,7 @@ class OSMcentroids(object):
     def create_relations_centroids(self):
         con = spatialite.connect(self.wOSMdb)
 
-        query = """CREATE TABLE osm_relations_centroids_source
+        query = """CREATE TABLE IF NOT EXISTS osm_relations_centroids_source
                    AS SELECT rel_id, type, ref, Geometry
                    FROM osm_relation_refs AS rr
                    JOIN (SELECT way_id, w.node_id, Geometry
@@ -167,9 +172,25 @@ class OSMcentroids(object):
                 """
         self._query_wrapper(query)
 
-        query = """CREATE TABLE osm_relations_centroids
+        query = """CREATE TABLE IF NOT EXISTS osm_relations_centroids
                    AS SELECT rel_id,
                              AsText(Centroid(ST_Collect(Geometry))) as centr,
+                             ST_Transform(
+                                ST_Buffer(
+                                    ST_Transform(
+                                        ST_ConcaveHull(
+                                            ST_Collect(Geometry),
+                                            5.0,
+                                            0
+                                            ),
+                                        3857
+                                        ),
+                                    10
+                                    ),
+                                4326
+                                ) as concave_hull,
+                             ST_ConvexHull(ST_Collect(Geometry)
+                                ) as convex_hull,
                              AsText(
                                 MakePoint(MbrMinX(ST_Collect(Geometry)),
                                           MbrMinY(ST_Collect(Geometry)),
@@ -212,7 +233,7 @@ class OSMcentroids(object):
         except spatialite.OperationalError as error:
             print "Failed execution of query:\n%s" % query
             print error
-            print "None table created"
+            print "No table created"
         finally:
             with con:
                 cur = con.cursor()
@@ -303,16 +324,17 @@ class OSMcentroids(object):
 def main():
         # Options
         text = 'Starting from the file containing OSM elements with '\
-               'Wikipedia tag (created with osmfilter) this script imports data into a '\
-               'Spatialite database '\
-               '(through spatialite_osm_raw). '\
-               'Then, it creates two tables: '\
-               '1) osm_ways_centroids '\
-               '2) osm_relations_centroids '\
-               '- which contain the centroids of ways and relations with Wikipedia tags respectevely.'\
-               'These data are used by the main program\'s script during '\
-               'web pages creation, specifically while creating the link '\
-               'to insert {{coord}} template in Wikipedia'
+            'Wikipedia tag (created with osmfilter) this script imports '\
+            'data into a Spatialite database '\
+            '(through spatialite_osm_raw). '\
+            'Then, it creates two tables: '\
+            '1) osm_ways_centroids '\
+            '2) osm_relations_centroids '\
+            '- which contain the centroids of ways and relations with '\
+            'Wikipedia tags respectevely.'\
+            'These data are used by the main program\'s script during '\
+            'web pages creation, specifically while creating the link '\
+            'to insert {{coord}} template in Wikipedia'
 
         parser = argparse.ArgumentParser(description=text)
 
@@ -361,11 +383,13 @@ def main():
                             help="Drop the database",
                             action="store_true")
         parser.add_argument("--drop_ways_centroids_table",
-                            help='Drop from the database the table whith ways centroids: '
+                            help='Drop the database the table with '
+                                 ' ways centroids: '
                                  'osm_ways_centroids',
                             action="store_true")
         parser.add_argument("--drop_relations_centroids_table",
-                            help='Drop from the database the table with relations centroids: '
+                            help='Drop the database the table with '
+                                 'relations centroids: '
                                  'osm_relations_centroids',
                             action="store_true")
 
