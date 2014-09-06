@@ -65,15 +65,23 @@ def _test_intersection_factory(app, _type):
         isWithinConcaveHull = False
         isWithinConvexHull = False
 
+        assert(_type == 'relations' or _type == 'ways' )
+
+        if _type == 'relations':
+            id_name = 'rel_id'
+        else:
+            id_name = 'way_id'
+
         query = """SELECT PtDistWithin(
                        ST_GeomFromText('{wkt}'),
                        concave_hull,
                        0
                     )
                     FROM osm_{_type}_centroids
-                    WHERE way_id={_id}
+                    WHERE {id_name}={_id}
                  """.format(_type=_type,
                             wkt=wkt,
+                            id_name=id_name,
                             _id=osm_id[1:]
                             )
 
@@ -88,9 +96,10 @@ def _test_intersection_factory(app, _type):
                            0
                         )
                         FROM osm_{_type}_centroids
-                        WHERE way_id={_id}
+                        WHERE {id_name}={_id}
                      """.format(_type=_type,
                                 wkt=wkt,
+                                id_name=id_name,
                                 _id=osm_id[1:]
                                 )
             result = _query_wrapper(query).fetchall()
