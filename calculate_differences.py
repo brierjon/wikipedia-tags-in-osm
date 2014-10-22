@@ -67,10 +67,14 @@ def _test_intersection_factory(app, _type):
 
         assert(_type == 'relations' or _type == 'ways' )
 
-        if _type == 'relations':
+        if _type == 'ways':
+            id_name = 'way_id'
+        elif _type == 'relations':
             id_name = 'rel_id'
         else:
-            id_name = 'way_id'
+            raise ValueError(u"type should be 'ways' or 'relations', got"
+                             "'{0}'' instead".format(_type)
+                             )
 
         query = """SELECT PtDistWithin(
                        ST_GeomFromText('{wkt}'),
@@ -124,7 +128,11 @@ def calculate(app):
     relationsOK = True if _query_wrapper_factory(app)(query).fetchone() \
         else False
 
-
+    count0 = 0
+    count1 = 0
+    count2 = 0
+    count_none = 0
+    count_total = 0
     for theme in app.themes:
         for category in theme.categories:
             category_distances_nodes = []
@@ -222,15 +230,15 @@ def calculate(app):
                 category_distances_relations,
                 SPLIT_RATIO)
 
-            print u"  - Threshold value for category {0}:".format(
-                category.name)
-            print u"      * nodes: upper: {0} - lower: {1}".format(
-                category.threshold_distance_nodes_upper,
-                category.threshold_distance_nodes_lower)
-            print u"      * ways: {0}".format(
-                category.threshold_distance_ways)
-            print u"      * relations: {0}".format(
-                category.threshold_distance_relations)
+            # print u"  - Threshold value for category {0}:".format(
+            #     category.name)
+            # print u"      * nodes: upper: {0} - lower: {1}".format(
+            #     category.threshold_distance_nodes_upper,
+            #     category.threshold_distance_nodes_lower)
+            # print u"      * ways: {0}".format(
+            #     category.threshold_distance_ways)
+            # print u"      * relations: {0}".format(
+            #     category.threshold_distance_relations)
 
             for article in category.allArticles:
                 score = 0
@@ -258,7 +266,7 @@ def calculate(app):
                         else:
                             if article.diffStatus[osm_id] == 1 and \
                                     centroid_distance > \
-                                    category.threshold_distance_ways:
+                                    category.threshold_distance_relations:
                                 article.diffStatus[osm_id] == 0
 
                     for osm_id in article.osmIds:
@@ -267,8 +275,27 @@ def calculate(app):
                     score = round(score/float(len(article.osmIds)), 0)
 
                     article.diffStatusOK = score
+
+                    if article.diffStatusOK == 0:
+                        count0 = count0 + 1
+                    elif article.diffStatusOK == 1:
+                        count1 = count1 + 1
+                    else:
+                        count2 = count2 + 1
+
                 else:
+                    count_none = count_none + 1
                     article.diffStatusOK = None
+
+            count_total = count_total + len(category.allArticles)
+
+    print """* Statistics about distance calculation
+  ** class 0: {0}
+  ** class 1: {1}
+  ** class 2: {2}
+  ** no distance: {3}
+  TOTAL: {4}
+""".format(count0, count1, count2, count_none, count_total)
 
 
 def save(app):
