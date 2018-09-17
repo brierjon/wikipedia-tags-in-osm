@@ -17,7 +17,7 @@ Updated webpages for Italy can be found [here](http://geodati.fmach.it/gfoss_geo
 ##Overview
 Starting from a list of Wikipedia categories, written by the user in the 'config.cfg' file, the script:
 
-0. downloads/updates the OSM data (PBF) of a country (from [GEOFABRIK](https://www.geofabrik.de/))
+0. downloads/updates the OSM data (PBF) of a country (from [GEOFABRIK](https://www.geofabrik.de/data/download.html))
 1. downloads subcategories and articles names of the selected Wikipedia categories (from Quick Intersection)
 2. parses the OSM file, filtering the [tags](http://wiki.openstreetmap.org/wiki/Wikipedia) accepted by [WIWOSM](https://wiki.openstreetmap.org/wiki/WIWOSM) project
 3. creates webpages to show which articles are already tagged and which ones are not, providing links to inspect how the objects have been mapped.
